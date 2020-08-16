@@ -47,7 +47,7 @@ my_comparisons <-
 
 Dunes.env <-
   read_excel(
-    "C:/Users/marin/Desktop/stage 2a/figures et tables/tables abio bio/explanatory_variables_Dunes_compiled.xlsx",
+    "G:/cloud/stage 2a/figures et tables/tables abio bio/explanatory_variables_Dunes_compiled.xlsx",
     na = "NA"
   ) %>% as_tibble()
 
@@ -107,7 +107,7 @@ Dunes.env <- na.omit(Dunes.env)
 Dunes.bio <-
   Matrice_station_espece_Mai_2020_Matched <-
   read_excel(
-    "C:/Users/marin/Desktop/stage 2a/figures et tables/tables abio bio/Matrice_station_espece_compiled.xlsx"
+    "G:/cloud/stage 2a/figures et tables/tables abio bio/Matrice_station_espece_compiled.xlsx"
   ) %>% as_tibble()
 Dunes.bio <- Dunes.bio %>% filter(Station %in% Treated_Stations)
 
@@ -200,6 +200,38 @@ StationxSpecies_abundance <-
   )
 
 StationxSpecies_abundance <- na.omit(StationxSpecies_abundance)
+
+#### CTD ####
+
+ctd <- read_excel("ctd.xlsx") %>% as_tibble()
+ctd_t <- filter(ctd,ctd$"Salinité (g/l)" >= 1)
+ctd_t <- aggregate(ctd_t, by = list(ctd_t$Box_name), FUN = sd)
+colMeans(select_if(ctd_t,is.numeric))
+
+ggplot(ctd) +
+ aes(x = `Température (°C)`, y = `Profondeur (m)`, colour = Box_name) +
+ geom_path(size = 1L) +
+ scale_color_hue() +
+ scale_y_continuous(trans = "reverse") +
+ theme_minimal() +
+ facet_wrap(vars(Box_name), scales = "free_x")
+
+ggplot(ctd) +
+ aes(x = `Salinité (g/l)`, y = `Profondeur (m)`, colour = Box_name) +
+ geom_path(size = 1L) +
+ scale_color_hue() +
+ scale_y_continuous(trans = "reverse") +
+ theme_minimal() +
+ facet_wrap(vars(Box_name), scales = "free_x")
+
+ggplot(ctd) +
+ aes(x = `Oxygène (%)`, y = `Profondeur (m)`, colour = Box_name) +
+ geom_path(size = 1L) +
+ scale_color_hue() +
+ scale_y_continuous(trans = "reverse") +
+ theme_minimal() +
+ facet_wrap(vars(Box_name), scales = "free_x")
+ctd
 
 #### Courbes granulométriques ####
 
@@ -799,7 +831,7 @@ adonis(data = MSE, MSE.sub ~ Box_name + Season + Depth)
 compare_means(Pielou ~ Box_name, data = MSE, group.by = "Season")
 compare_means(Clay ~ Box_name, data = Dunes.env)
 MSE.sub <- select(MSE, Season,Box_name,Rich_spe,Total_abundance,Shannon,Pielou)
-agg <- aggregate(select_if(MSE.sub,is.numeric), list(MSE.sub$Season,MSE.sub$Box_name), mean)
+agg <- aggregate(select_if(MSE.sub,is.numeric), list(MSE.sub$Season,MSE.sub$Box_name), sd)
 agg
 
 # diagrammes rang fréquence
@@ -819,6 +851,10 @@ tab <- empty_blanks(tab)
 tab
 #print(tab, preview = "docx")
 
+# analyse univariées indices
+
+lm.Median <- lm(data = MSE, Rich_spe ~ Median + Organic_matter_content )
+summary(lm.Median)
 
 #### Nmds all ####
 
@@ -886,6 +922,8 @@ for (i in 1:length(simp_list)){
   simp_list_res_all <- cbindX(simp_list_res_all,select(simp_list[[i]],Species,Value))
 }
 
+#write.csv(simp_list_res_all,file = "simp_list_res_all.csv")
+
 spp.scrs <- rownames_to_column(spp.scrs,var="Species")
 sig.spp.scrs <- spp.scrs %>% filter(Species %in% spc_list$Species)
 sig.spp.scrs <- left_join(sig.spp.scrs,spc_list)
@@ -924,8 +962,7 @@ Nmds_graph = ggplot(data = data.scores, aes(x = NMDS1, y = NMDS2)) +
   labs(colour = "Box_name")
 
 Nmds_graph
-
-ggsave(file="Nmds_season.png", plot=Nmds_graph, width=14, height=8)
+#ggsave(file="Nmds_season.png", plot=Nmds_graph, width=14, height=8)
 
 # Nmds par saisons ####
 
@@ -1172,7 +1209,7 @@ image <-
     label_x = 0.35
   )
 image
-ggsave(file="Nmds_synth.png", plot=image, width=14, height=8)
+#ggsave(file="Nmds_synth.png", plot=image, width=14, height=8)
 
 names(simp_list_res_all) = c("index","sp1","v1","sp2","v2")
 tab <- simp_list_res_all %>% filter(!is.na(v2)) %>% as_tibble()
@@ -1520,4 +1557,13 @@ image = ggdraw() +
   draw_plot(Pielou_3, 0.5, 0, .5, .5)
 image
 #ggsave(file="Indices_bioXDepth.png", plot=image, width=8, height=6)
+
+#### nb species ####
+
+spc <- select(Dunes.bio,12:20)
+spc <- unique(spc)
+spc
+count(spc,"Phylum")
+count(spc,"Species")
+
 
